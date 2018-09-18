@@ -236,8 +236,11 @@ class Protein:
                         raise TypeError()
                 # collect Termini resids 
                 if CurrentAtom.chain not in self.chainTermini.keys():
-                    print(CurrentAtom.resid, residues)
-                    if CurrentAtom.resid in residues:
+                    if residues == None:
+                        self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
+                        if i != 0:
+                            self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
+                    elif CurrentAtom.resid in residues:
                         self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
                         if i != 0:
                             self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)

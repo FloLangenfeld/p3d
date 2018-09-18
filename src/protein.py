@@ -48,17 +48,21 @@ class Protein:
     '''
     p3d.Protein object
 
-    usage p3d.protein.Protein(pdbfile,mode='3D',chains=None,MaxAtomsPerLeaf=24)
+    usage p3d.protein.Protein(pdbfile,mode='3D',chains=None,,residues=None,models=None,MaxAtomsPerLeaf=24)
 
     mode:   3D creates Atom objects with x y z coordinates and initializes a BSP Tree
             2D creates only sequences (not implemented yet)
 
-    chains: reads only those peptide chains that are in list 
+    chains: reads only those peptide chains that are in list
+
+    residues: reads only those peptide residues that are in list
+
+    models: reads only those peptide models that are in list
 
     MaxAtomsPerLeaf:    How many atoms per leaf on the BSP Tree. Smaller numbers increase
                         inital tree building time but decrease then overall query times.
     '''
-    def __init__(self,pdbfile,mode='3D',chains=None,MaxAtomsPerLeaf=96,DunbrackNaming=False,BSPTree=True):
+    def __init__(self,pdbfile,mode='3D',chains=None,residues=None,models=None,MaxAtomsPerLeaf=96,DunbrackNaming=False,BSPTree=True):
         if not os.path.exists(pdbfile): 
             raise InputError('File does not exist!')
             sys.exit(1)
@@ -101,7 +105,7 @@ class Protein:
                 self.dunbrackChain = None
             if mode == '3D':
                 self.BSPTree = p3d.tree.Tree(protein=self)
-                self.read_in_3Dstructure(pdbfile,chains=chains)
+                self.read_in_3Dstructure(pdbfile,chains=chains,residues=residues,models=models)
                 if BSPTree:
                     self.BSPTree.build(MaxAtomsPerLeaf=MaxAtomsPerLeaf)
             elif mode == '2D':
@@ -136,7 +140,7 @@ class Protein:
                 
         return liste
 
-    def read_in_3Dstructure(self,pdbfile,chains=None):
+    def read_in_3Dstructure(self,pdbfile,chains=None,residues=None,models=None):
         '''
         We will overwrite any existing structure
         '''
@@ -211,18 +215,35 @@ class Protein:
                 # ze Atom :
                 CurrentAtom = p3d.atom.Atom(line=None,protein=self,PositionInAtomslist=i,model=current_model,matchObject=match)
                 #
-                # collect Termini resids 
-                if CurrentAtom.chain not in self.chainTermini.keys():
-                    self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
-                    if i != 0:
-                        self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
-                # check if we should concentrate on certain chains
+                # check if we should concentrate on certain chains/residues/models
                 if chains != None:
                     if type(chains) in [tuple,list]:
                         if CurrentAtom.chain not in chains:
                             continue
                     else:
                         raise TypeError()
+                if residues != None:
+                    if type(residues) in [tuple,list]:
+                        if CurrentAtom.resid not in residues:
+                            continue
+                    else:
+                        raise TypeError()
+                if models != None:
+                    if type(models) in [tuple,list]:
+                        if CurrentAtom.model not in models:
+                            continue
+                    else:
+                        raise TypeError()
+                # collect Termini resids 
+                if CurrentAtom.chain not in self.chainTermini.keys():
+                    if residues == None:
+                        self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
+                        if i != 0:
+                            self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
+                    elif CurrentAtom.resid in residues:
+                        self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
+                        if i != 0:
+                            self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
                 # --- add to atom-collection list ---
                 self.atoms.append(CurrentAtom)
                 # --- add to atype hash ---
@@ -284,7 +305,7 @@ class Protein:
                         self.headers_infos[k].append(v)
                 if line.startswith('CONECT'):
                     tmp = line.strip()[6:]
-                    tmp = [int(tmp[x:x+5]) for x in xrange(0, len(tmp), 5)]
+                    tmp = [int(tmp[x:x+5]) for x in range(0, len(tmp), 5)]
                     self.conect.append((tmp))
                 self.leftOvers.append('{0: <76}\n'.format(line.strip()))
                 if line.startswith('ATOM'):

@@ -48,12 +48,16 @@ class Protein:
     '''
     p3d.Protein object
 
-    usage p3d.protein.Protein(pdbfile,mode='3D',chains=None,MaxAtomsPerLeaf=24)
+    usage p3d.protein.Protein(pdbfile,mode='3D',chains=None,,residues=None,models=None,MaxAtomsPerLeaf=24)
 
     mode:   3D creates Atom objects with x y z coordinates and initializes a BSP Tree
             2D creates only sequences (not implemented yet)
 
-    chains: reads only those peptide chains that are in list 
+    chains: reads only those peptide chains that are in list
+
+    residues: reads only those peptide residues that are in list
+
+    models: reads only those peptide models that are in list
 
     MaxAtomsPerLeaf:    How many atoms per leaf on the BSP Tree. Smaller numbers increase
                         inital tree building time but decrease then overall query times.
@@ -211,12 +215,7 @@ class Protein:
                 # ze Atom :
                 CurrentAtom = p3d.atom.Atom(line=None,protein=self,PositionInAtomslist=i,model=current_model,matchObject=match)
                 #
-                # collect Termini resids 
-                if CurrentAtom.chain not in self.chainTermini.keys():
-                    self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
-                    if i != 0:
-                        self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
-                # check if we should concentrate on certain chains
+                # check if we should concentrate on certain chains/residues/models
                 if chains != None:
                     if type(chains) in [tuple,list]:
                         if CurrentAtom.chain not in chains:
@@ -235,6 +234,13 @@ class Protein:
                             continue
                     else:
                         raise TypeError()
+                # collect Termini resids 
+                if CurrentAtom.chain not in self.chainTermini.keys():
+                    print(CurrentAtom.resid, residues)
+                    if CurrentAtom.resid in residues:
+                        self.chainTermini[CurrentAtom.chain] = [CurrentAtom.resid]
+                        if i != 0:
+                            self.chainTermini[self.atoms[-1].chain].append(self.atoms[-1].resid)
                 # --- add to atom-collection list ---
                 self.atoms.append(CurrentAtom)
                 # --- add to atype hash ---
